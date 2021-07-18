@@ -11,13 +11,17 @@ const SERVER_PORT = '8080'
 
 io.on('connection', socket => {
     console.log('CONSEGUIU CONECTAR')
-    socket.on('onClick', (data) => {
-        console.log('onClick', data)
+
+    socket.on('addVideo', (data) => {
+        console.log('addVideo', data)
+        io.emit('receiveAddVideo', data)
     })
 
-    socket.on('onClickBroadcast', (data) => {
-        console.log('onClickBroadcast', data)
-        socket.broadcast.emit('messageBroadcast', data)
+    socket.on('playOrPause', (data) => {
+        console.log('playOrPause', data)
+        // Talvez so precise de apenas um desses emit
+        // socket.broadcast.emit('messageBroadcast', data)
+        io.emit('receivePlayOrPause', data)
     })
 })
 

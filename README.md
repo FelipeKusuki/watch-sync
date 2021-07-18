@@ -12,3 +12,4 @@ Watch Sync é uma aplicação web para assitir videos do YouTube de for sincrona
 
 * https://www.youtube.com/watch?v=n0XTxlp68wc
 * https://github.com/kyle8998/Vynchronize
+* https://www.npmjs.com/package/yt-player

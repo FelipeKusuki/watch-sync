@@ -1,12 +1,8 @@
 import React, { useState } from 'react'
-import logo from './logo.svg'
 import './App.css';
 import io from 'socket.io-client'
-import ReactDOM from 'react-dom';
+import ReactPlayer from 'react-player'
 
-const YTPlayer = require('yt-player')
-// const teste = document.getElementById('player')
-// const player = new YTPlayer('.player')
 const socket = io('http://localhost:8080')
 
 socket.on('connect', () => {
@@ -14,10 +10,8 @@ socket.on('connect', () => {
 })
 
 function App() {
-  const [message, updateMessage] = useState('')
-  const [messages, updateMessages] = useState([])
-  let videoURL = ''
-  let videoList:any = []
+  const [videoList, setVideoList] = useState(['https://www.youtube.com/watch?v=ERFXravD0AU'])
+  const [videoURL, setUrl] = useState('')
 
   // Recebe mensagem para iniciar/pausar video
   socket.on('receivePlayOrPause', (data: any) => {
@@ -25,73 +19,58 @@ function App() {
   })
 
   socket.on('receiveAddVideo', (data: any) => {
-    console.log('Recebendo mensagem para adicionar um video', data)
-    // player.load('GKSRyLdjsPA')
-    // player.setVolume(100)
-    
-    // player.on('playing', () => {
-    //   console.log(player.getDuration()) // => 351.521
-    // })
-    console.log('AGORA VAI ', videoList)
-    formatterVideoList()
   })
 
-  const formatterVideoList = () => {
-    ReactDOM.render(
-      <li>{videoList}</li>,  document.getElementById('videoList')
-    );
-  }
 
   const addVideo = (event: any) => {
-    console.log('Adicionar um video')
     //Para evitar que o navegador atualize sempre q fizer a requisição
     event.preventDefault();
     socket.emit('addVideo',{
       id: '1',
       nome: videoURL
     })
-    videoList.push(videoURL)
+    setVideoList([
+      ...videoList,
+      videoURL
+    ])
   }
 
-  const handleChange = (event: any) => {
-    videoURL = event.target.value;
+  const handleEndVideo = () => {
+    if(videoList.length > 1) {
+      // Remove o primeiro elemento da lista
+      videoList.splice(0,1);
+      setVideoList(
+        [...videoList]
+      )
+    }
+    setUrl(videoList[0])
+    console.log('AGORA VAI', videoList)
   }
 
-  const playOrPause = (event: any) => {
-    console.log('Click BroadCast')
-    //Para evitar que o navegador atualize sempre q fizer a requisição
-    event.preventDefault();
-    socket.emit('playOrPause', {
-      id: '2',
-      nome: 'Blinking the p...'
-    })
+  const handleChangeUrl = (event: any) => {
+    setUrl(event.target.value)
   }
-
-  // player inicio
-  // player.load('GKSRyLdjsPA')
-  // player.setVolume(100)
-   
-  // player.on('playing', () => {
-  //   console.log(player.getDuration()) // => 351.521
-  // })
-  // player fim
 
   return (
     <div className="App">
       <form onSubmit={addVideo}>
         <label>
           URL Video:
-          <input type="text" onChange={handleChange} />
+          <input type="text" onChange={handleChangeUrl} />
         </label>
         <input type="submit" value="Adicionar" />
       </form>
-      <button onClick={playOrPause}>
-        Iniciar/Pausar
+      <button onClick={handleEndVideo}>
+        Proximo
       </button>
-      {/* 1. The <iframe> (and video player) will replace this */}
-      <script src='https://www.youtube.com/iframe_api' async></script>
-      <div id="player" className="player">PLAYER YOUTUBE</div>
-      <ul id ='videoList'></ul>
+      <div className="player">
+        <ReactPlayer playing controls={true} url={videoList[0]} onEnded={handleEndVideo} />
+      </div>
+      <ul id ='videoList'>
+        {videoList.map(item => 
+          <li>{item}</li>
+        )}
+      </ul>
       
     </div>
   )

@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import './App.css';
 import io from 'socket.io-client'
 import ReactPlayer from 'react-player'
+import Button from '@material-ui/core/Button';
+import TextField from '@material-ui/core/TextField';
 
 const socket = io('http://localhost:8080')
 
@@ -54,15 +56,14 @@ function App() {
   return (
     <div className="App">
       <form onSubmit={addVideo}>
-        <label>
-          URL Video:
-          <input type="text" onChange={handleChangeUrl} />
-        </label>
-        <input type="submit" value="Adicionar" />
+        <TextField id="standard-basic" label="URL Video:" onChange={handleChangeUrl} />
+        <Button variant="contained" color="primary" onClick={addVideo}>
+          Adicionar
+        </Button>
       </form>
-      <button onClick={handleEndVideo}>
+      <Button variant="contained" color="primary" onClick={handleEndVideo}>
         Proximo
-      </button>
+      </Button>
       <div className="player">
         <ReactPlayer playing controls={true} url={videoList[0]} onEnded={handleEndVideo} />
       </div>

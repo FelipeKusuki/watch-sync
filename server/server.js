@@ -13,8 +13,11 @@ io.on('connection', socket => {
     console.log('CONSEGUIU CONECTAR')
 
     socket.on('addVideo', (data) => {
-        console.log('addVideo', data)
         io.emit('receiveAddVideo', data)
+    })
+
+    socket.on('endVideo', () => {
+        io.emit('receiveEndVideo')
     })
 
     socket.on('playOrPause', (data) => {

@@ -2,10 +2,6 @@
   text-align: center;
 }
 
-.player {
-  display: flex;
-}
-
 .App-logo {
   height: 40vmin;
   pointer-events: none;
@@ -40,3 +36,41 @@
     transform: rotate(360deg);
   }
 }
+
+/* MEU CSS */
+.header {
+  height: 100px;
+  background-color: red;
+  display: flex;
+}
+
+.logo {
+  width: 10%;
+  height: 100%;
+  background-color: white;
+  border-radius: 50%;
+  overflow: hidden;
+  float: left;
+  margin: 0 15px;
+  transition: 0.3s ease;
+  background-image: url("./assets/danielSync.jpg");
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.logo #img {
+  width: 100%;
+  height: auto;
+}
+
+.body {
+  display: flex;
+  margin: 8px;
+}
+
+.controls {
+  display: flex;
+  justify-content: space-around;
+  margin: 8px;
+}
+

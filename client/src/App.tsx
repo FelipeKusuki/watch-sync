@@ -1,9 +1,14 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import './App.css';
 import io from 'socket.io-client'
 import ReactPlayer from 'react-player'
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogContentText from '@material-ui/core/DialogContentText';
+import DialogTitle from '@material-ui/core/DialogTitle';
 
 const socket = io('http://localhost:8080')
 
@@ -12,29 +17,65 @@ socket.on('connect', () => {
 })
 
 function App() {
-  const [videoList, setVideoList] = useState(['https://www.youtube.com/watch?v=ERFXravD0AU'])
+  // controle do modal de nome de usuario
+  const [open, setOpen] = React.useState(false);
+  const [userName, setUserName] = useState('Daniel Do Sync')
+  const [localUserList, setUserList] = useState([])
+  const [localVideoList, setVideoList] = useState(['https://www.youtube.com/watch?v=ERFXravD0AU'])
   const [videoURL, setUrl] = useState('')
+  const [secondsVideo, setSecondsVideo] = useState(0)
   const [playVideo, setPlayVideo] = useState(false)
+  let timeVideoAux: number = 0;
+
+  useEffect(() => {
+    // init do component
+    socket.emit('getUserList')
+    socket.emit('getVideoList')
+    handleOpenDialog()
+    return () => {
+     // destroy acontece aqui
+     console.log('REMOVE ELEMENTO', userName)
+     socket.emit('removeUser', userName)
+    }
+  }, []);
+
+  const handleOpenDialog = () => {
+    setOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    socket.emit('addUser', userName)
+    setOpen(false);
+  };
+
+  // Recebe lista de usuarios
+  socket.on('receiveUserList', (userList: any) => {
+    if(userList) {
+      setUserList(userList)
+    }
+  })
 
   // Recebe mensagem para iniciar/pausar video
   socket.on('receivePlayOrPause', (data: any) => {
-    console.log('DASTA', data)
-    if(data == 'play') {
+    if(data === 'play') {
       setPlayVideo(true)
     } else {
       setPlayVideo(false)
     }
-
   })
 
-  socket.on('receiveAddVideo', (data: any) => {
-    if(data.url) {
-      addVideo(data.url)
+  socket.on('receiveAddVideo', (videoList: any) => {
+    if(videoList) {
+      addVideo(videoList)
     }
   })
 
-  socket.on('receiveEndVideo', () => {
-    endVideo()
+  socket.on('receiveSyncVideo', (timeSeconds: number) => {
+    setSecondsVideo(timeSeconds)
+  })
+
+  socket.on('receiveEndVideo', (videoList: any) => {
+    endVideo(videoList)
   })
 
   const handlePlayVideo = () => {
@@ -48,36 +89,38 @@ function App() {
   const handleAddVideo = (event: any) => {
     //Para evitar que o navegador atualize sempre q fizer a requisição
     event.preventDefault();
-    socket.emit('addVideo',{
-      id: '1',
-      url: videoURL
-    })
+    socket.emit('addVideo',videoURL)
   }
 
   const handleEndVideo = () => {
-    socket.emit('endVideo', 'pause')
+    socket.emit('endVideo')
   }
 
-  const addVideo = (url: string) => {
-    setVideoList([
-      ...videoList,
-      url
-    ])
+  const handleSyncVideo = () => {
+    socket.emit('syncVideo', timeVideoAux)
   }
 
-  const endVideo = () => {
-    if(videoList.length > 1) {
-      // Remove o primeiro elemento da lista
-      videoList.splice(0,1);
-      setVideoList(
-        [...videoList]
-      )
+  const handleProgressVideo = (event: any) => {
+    timeVideoAux = event.playedSeconds
+  }
+
+  const addVideo = (videoList: Array<any>) => {
+    if(videoList) {
+      setVideoList(videoList)
     }
+  }
+
+  const endVideo = (videoList: Array<any>) => {
+    setVideoList(videoList)
     setUrl(videoList[0])
   }
 
   const handleChangeUrl = (event: any) => {
     setUrl(event.target.value)
+  }
+
+  const handleChangeUserName = (event: any) => {
+    setUserName(event.target.value)
   }
 
   return (
@@ -98,7 +141,7 @@ function App() {
             Lista de usuarios
           </h2>
           <ul>
-            {videoList.map(item => 
+            {localUserList.map(item => 
               <li>{item}</li>
             )}
           </ul>
@@ -106,7 +149,15 @@ function App() {
 
         <div className="youtubePlayer">
           <div className="player">
-            <ReactPlayer playing={playVideo} controls={true} url={videoList[0]} onPlay={handlePlayVideo} onPause={handlePauseVideo} onEnded={handleEndVideo} />
+            <ReactPlayer
+              onProgress={handleProgressVideo}
+              playing={playVideo}
+              controls={true}
+              url={localVideoList[0] + '?t=' + secondsVideo}
+              onPlay={handlePlayVideo}
+              onPause={handlePauseVideo}
+              onEnded={handleEndVideo}
+            />
           </div>
           <div className="controls">
             <form onSubmit={handleAddVideo}>
@@ -118,6 +169,9 @@ function App() {
             <Button variant="contained" color="primary" onClick={handleEndVideo}>
               Proximo
             </Button>
+            <Button variant="contained" color="primary" onClick={handleSyncVideo}>
+              Sincronizar
+            </Button>
           </div>
         </div>
 
@@ -126,12 +180,34 @@ function App() {
             Lista de Videos
           </h2>
           <ul>
-            {videoList.map(item => 
+            {localVideoList.map(item => 
               <li>{item}</li>
             )}
           </ul>
         </div>
       </div>
+
+      {/* DIALOG PARA NOME DE USUARIO */}
+      <Dialog open={open} onClose={handleCloseDialog} aria-labelledby="form-dialog-title">
+        <DialogTitle id="form-dialog-title">Nome de Usuario</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="name"
+            label="Nome de Usuario"
+            type="text"
+            fullWidth
+            onChange={handleChangeUserName}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog} color="primary">
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
+      {/* FIM DIALOG PARA NOME DE USUARIO */}
       
     </div>
   )
